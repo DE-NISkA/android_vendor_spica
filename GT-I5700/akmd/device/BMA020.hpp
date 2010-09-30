@@ -6,12 +6,11 @@
 #include "Calibrator.hpp"
 #include "math/Vector.hpp"
 
-//#define BMA150_NAME "/dev/bma150"
-#define BMA150_NAME "/dev/bma020"
+#define BMA020_NAME "/dev/bma020"
 
 namespace akmd {
 
-class BMA150 : public ChipReader {
+class BMA020 : public ChipReader {
     private:
     /* Open file descriptors */
     int fd;
@@ -28,8 +27,8 @@ class BMA150 : public ChipReader {
     void calibrate();
 
     public:
-    BMA150();
-    ~BMA150();
+    BMA020();
+    ~BMA020();
 
     void measure();
     Vector read();

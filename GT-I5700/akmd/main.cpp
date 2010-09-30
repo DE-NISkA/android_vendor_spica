@@ -17,10 +17,10 @@
 #include <stdio.h>
 
 #include "Akmd.hpp"
-#include "device/AKM8973_2_6_29.hpp"
+#include "device/AK8973B.hpp"
 #include "device/OrientationAdapter.hpp"
 #include "device/TemperatureReaderAdapter.hpp"
-#include "device/BMA150.hpp"
+#include "device/BMA020.hpp"
 
 using namespace akmd;
 
@@ -40,8 +40,8 @@ static void* read_loop(void *lock)
 
 void hero_mainloop(int magnetometer_gain, int temperature_zero)
 {
-    AKM8973_2_6_29* magnetometer_reader = new AKM8973_2_6_29(magnetometer_gain);
-    ChipReader* accelerometer_reader = new BMA150();
+    AK8973B* magnetometer_reader = new AK8973B(magnetometer_gain);
+    ChipReader* accelerometer_reader = new BMA020();
     ChipReader* orientation_reader = new OrientationAdapter(accelerometer_reader, magnetometer_reader);
     ChipReader* temperature_reader = new TemperatureReaderAdapter(magnetometer_reader, temperature_zero);
     measurer = new Akmd(orientation_reader, magnetometer_reader, accelerometer_reader, temperature_reader, magnetometer_reader);
