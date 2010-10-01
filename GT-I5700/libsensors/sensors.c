@@ -67,19 +67,19 @@ struct sensors_data_context_t {
  */
 
 static const struct sensor_t sSensorList[] = {
-        { "AK8976A 3-axis Accelerometer",
-                "Asahi Kasei",
+        { "BMA020 3-axis Accelerometer",
+                "BOSH",
                 1, SENSORS_HANDLE_BASE+ID_A,
                 SENSOR_TYPE_ACCELEROMETER, 2.8f*9.81f, 9.81f/45.0f, 3.0f, { } },
-        { "AK8976A 3-axis Magnetic field sensor",
+        { "AK8973B 3-axis Magnetic field sensor",
                 "Asahi Kasei",
                 1, SENSORS_HANDLE_BASE+ID_M,
                 SENSOR_TYPE_MAGNETIC_FIELD, 2000.0f, 1.0f, 6.7f, { } },
-        { "AK8976A Orientation sensor",
+        { "AK8973B Orientation sensor",
                 "Asahi Kasei",
                 1, SENSORS_HANDLE_BASE+ID_O,
                 SENSOR_TYPE_ORIENTATION, 360.0f, 1.0f, 9.7f, { } },
-        { "AK8976A Temperature sensor",
+        { "AK8973B Temperature sensor",
                 "Asahi Kasei",
                 1, SENSORS_HANDLE_BASE+ID_T,
                 SENSOR_TYPE_TEMPERATURE, 115.0f, 1.6f, 3.0f, { } },
@@ -105,7 +105,7 @@ struct sensors_module_t HAL_MODULE_INFO_SYM = {
         .version_major = 1,
         .version_minor = 0,
         .id = SENSORS_HARDWARE_MODULE_ID,
-        .name = "AK8976A SENSORS Module",
+        .name = "AK8973B SENSORS Module",
         .author = "The Android Open Source Project",
         .methods = &sensors_module_methods,
     },
@@ -157,6 +157,8 @@ struct sensors_module_t HAL_MODULE_INFO_SYM = {
 
 static int open_input(int mode)
 {
+    //LOGD("sensors: %s called",__FUNCTION__);
+    
     /* scan all input drivers and look for "compass" */
     int fd = -1;
     const char *dirname = "/dev/input";
@@ -200,6 +202,7 @@ static int open_input(int mode)
 
 static int open_akm(struct sensors_control_context_t* dev)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (dev->akmd_fd <= 0) {
         dev->akmd_fd = open(AKM_DEVICE_NAME, O_RDONLY);
         //LOGD("%s, fd=%d", __PRETTY_FUNCTION__, dev->akmd_fd);
@@ -214,6 +217,7 @@ static int open_akm(struct sensors_control_context_t* dev)
 
 static void close_akm(struct sensors_control_context_t* dev)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (dev->akmd_fd > 0) {
         //LOGD("%s, fd=%d", __PRETTY_FUNCTION__, dev->akmd_fd);
         close(dev->akmd_fd);
@@ -223,6 +227,7 @@ static void close_akm(struct sensors_control_context_t* dev)
 
 static void enable_disable(int fd, uint32_t sensors, uint32_t mask)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (fd<0) return;
     short flags;
     
@@ -254,6 +259,7 @@ static void enable_disable(int fd, uint32_t sensors, uint32_t mask)
 
 static uint32_t read_sensors_state(int fd)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (fd<0) return 0;
     short flags;
     uint32_t sensors = 0;
@@ -281,6 +287,7 @@ static uint32_t read_sensors_state(int fd)
 
 static native_handle_t* control__open_data_source(struct sensors_control_context_t *dev)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     native_handle_t* handle;
     int fd = open_input(O_RDONLY);
     if (fd < 0) {
@@ -295,6 +302,7 @@ static native_handle_t* control__open_data_source(struct sensors_control_context
 static int control__activate(struct sensors_control_context_t *dev,
         int handle, int enabled)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if ((handle<SENSORS_HANDLE_BASE) || 
             (handle>=SENSORS_HANDLE_BASE+MAX_NUM_SENSORS)) {
         return -1;
@@ -316,7 +324,7 @@ static int control__activate(struct sensors_control_context_t *dev,
 
             enable_disable(fd, new_sensors, changed);
 
-            LOGD("sensors=%08x, real=%08x",
+            //LOGD("sensors=%08x, real=%08x",
                     new_sensors, read_sensors_state(fd));
 
             if (active && !new_sensors) {
@@ -333,7 +341,7 @@ static int control__activate(struct sensors_control_context_t *dev,
 
 static int control__set_delay(struct sensors_control_context_t *dev, int32_t ms)
 {
-#ifdef ECS_IOCTL_APP_SET_DELAY
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (dev->akmd_fd <= 0) {
         return -1;
     }
@@ -342,13 +350,11 @@ static int control__set_delay(struct sensors_control_context_t *dev, int32_t ms)
         return -errno;
     }
     return 0;
-#else
-    return -1;
-#endif
 }
 
 static int control__wake(struct sensors_control_context_t *dev)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     int err = 0;
     int fd = open_input(O_WRONLY);
     if (fd > 0) {
@@ -367,6 +373,7 @@ static int control__wake(struct sensors_control_context_t *dev)
 
 static int data__data_open(struct sensors_data_context_t *dev, native_handle_t* handle)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     int i;    
     memset(&dev->sensors, 0, sizeof(dev->sensors));
     
@@ -386,6 +393,7 @@ static int data__data_open(struct sensors_data_context_t *dev, native_handle_t* 
 
 static int data__data_close(struct sensors_data_context_t *dev)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     if (dev->events_fd > 0) {
         //LOGD("(data close) about to close fd=%d", dev->events_fd);
         close(dev->events_fd);
@@ -397,6 +405,7 @@ static int data__data_close(struct sensors_data_context_t *dev)
 static int pick_sensor(struct sensors_data_context_t *dev,
         sensors_data_t* values)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     uint32_t mask = SUPPORTED_SENSORS;
     while (mask) {
         uint32_t i = 31 - __builtin_clz(mask);
@@ -420,29 +429,32 @@ static int pick_sensor(struct sensors_data_context_t *dev,
 
 static int data__poll(struct sensors_data_context_t *dev, sensors_data_t* values)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     int fd = dev->events_fd;
-    if (fd < 0) {
+
+	if (fd < 0) {
         LOGE("invalid file descriptor, fd=%d", fd);
         return -1;
     }
-
+	
     // there are pending sensors, returns them now...
     if (dev->pendingSensors) {
         return pick_sensor(dev, values);
     }
-
+	//LOGD("sensors: no pending sensors trying read");
     // wait until we get a complete event for an enabled sensor
     uint32_t new_sensors = 0;
     while (1) {
         /* read the next event */
         struct input_event event;
         int nread = read(fd, &event, sizeof(event));
+		//LOGD("sensors: poll read=%d szevent=%d",nread,sizeof(event));
         if (nread == sizeof(event)) {
             uint32_t v;
             if (event.type == EV_ABS) {
                 //LOGD("type: %d code: %d value: %-5d time: %ds",
-                //        event.type, event.code, event.value,
-                //      (int)event.time.tv_sec);
+                        event.type, event.code, event.value,
+                      (int)event.time.tv_sec);
                 switch (event.code) {
 
                     case EVENT_TYPE_ACCEL_X:
@@ -495,7 +507,7 @@ static int data__poll(struct sensors_data_context_t *dev, sensors_data_t* values
                         break;
                     case EVENT_TYPE_ACCEL_STATUS:
                         // accuracy of the calibration (never returned!)
-                        //LOGD("G-Sensor status %d", event.value);
+                        ////LOGD("G-Sensor status %d", event.value);
                         break;
                     case EVENT_TYPE_ORIENT_STATUS:
                         // accuracy of the calibration
@@ -532,6 +544,7 @@ static int data__poll(struct sensors_data_context_t *dev, sensors_data_t* values
 
 static int control__close(struct hw_device_t *dev) 
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     struct sensors_control_context_t* ctx = (struct sensors_control_context_t*)dev;
     if (ctx) {
         if (ctx->akmd_fd > 0)
@@ -543,6 +556,7 @@ static int control__close(struct hw_device_t *dev)
 
 static int data__close(struct hw_device_t *dev) 
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     struct sensors_data_context_t* ctx = (struct sensors_data_context_t*)dev;
     if (ctx) {
         if (ctx->events_fd > 0) {
@@ -559,6 +573,7 @@ static int data__close(struct hw_device_t *dev)
 static int open_sensors(const struct hw_module_t* module, const char* name,
         struct hw_device_t** device)
 {
+	//LOGD("sensors: %s called",__FUNCTION__);
     int status = -EINVAL;
     if (!strcmp(name, SENSORS_HARDWARE_CONTROL)) {
         struct sensors_control_context_t *dev;
