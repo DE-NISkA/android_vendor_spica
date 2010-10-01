@@ -324,8 +324,7 @@ static int control__activate(struct sensors_control_context_t *dev,
 
             enable_disable(fd, new_sensors, changed);
 
-            //LOGD("sensors=%08x, real=%08x",
-                    new_sensors, read_sensors_state(fd));
+            //LOGD("sensors=%08x, real=%08x", new_sensors, read_sensors_state(fd));
 
             if (active && !new_sensors) {
                 // close the driver
@@ -452,9 +451,7 @@ static int data__poll(struct sensors_data_context_t *dev, sensors_data_t* values
         if (nread == sizeof(event)) {
             uint32_t v;
             if (event.type == EV_ABS) {
-                //LOGD("type: %d code: %d value: %-5d time: %ds",
-                        event.type, event.code, event.value,
-                      (int)event.time.tv_sec);
+                //LOGD("type: %d code: %d value: %-5d time: %ds", event.type, event.code, event.value, (int)event.time.tv_sec);
                 switch (event.code) {
 
                     case EVENT_TYPE_ACCEL_X:
