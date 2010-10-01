@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 #include "device/BMA020.hpp"
 #include "linux-2.6.29/bma020.h"
@@ -10,17 +11,19 @@ BMA020::BMA020()
 : index(0), accelerometer(3600)
 {
     abuf[0] = abuf[1] = Vector();
-
+    unsigned char param=0;
+    
     fd = open(BMA020_NAME, O_RDONLY);
     SUCCEED(fd != -1);
-//    SUCCEED(ioctl(fd, BMA_IOCTL_INIT, NULL) == 0);
     
-    char rwbuf[8] = { 1, RANGE_BWIDTH_REG };
-    SUCCEED(ioctl(fd, BMA020_READ_ACCEL_XYZ, &rwbuf) == 0);
-    rwbuf[2] = (rwbuf[1] & 0xf8) | 1; /* 47 Hz sampling */
-    rwbuf[0] = 2;
-    rwbuf[1] = RANGE_BWIDTH_REG;
-    SUCCEED(ioctl(fd, BMA_IOCTL_WRITE, &rwbuf) == 0);
+//    param = BMA020_MODE_NORMAL;
+//    SUCCEED(ioctl(fd, BMA020_SET_MODE,      &param) == 0);
+    
+    param = BMA020_RANGE_2G;
+    SUCCEED(ioctl(fd, BMA020_SET_RANGE,     &param) == 0);
+    
+    param = BMA020_BW_50HZ;
+    SUCCEED(ioctl(fd, BMA020_SET_BANDWIDTH, &param) == 0);
 }
 
 BMA020::~BMA020()
@@ -74,12 +77,10 @@ void BMA020::measure()
 {
     SUCCEED(gettimeofday(&next_update, NULL) == 0);
 
-    /* BMA150 is constantly measuring and filtering, so it never sleeps.
-     * The ioctl in truth returns only 3 values, but buffer in kernel is
-     * defined as 8 shorts long. */
-    short bma020_data[8];
-    SUCCEED(ioctl(fd, BMA_IOCTL_READ_ACCELERATION, &bma020_data) == 0);
-    abuf[index] = Vector(bma020_data[0], -bma020_data[1], bma020_data[2]);
+    bma020acc_t accels;
+    
+    SUCCEED(ioctl(fd, BMA020_READ_ACCEL_XYZ, &accels) == 0);
+    abuf[index] = Vector(accels.x, -accels.y, accels.z);
     index = (index + 1) & 1;
 
     a = abuf[0].add(abuf[1]).multiply(0.5f * (720.0f / 256.0f));
@@ -93,14 +94,14 @@ Vector BMA020::read()
 
 void BMA020::start()
 {
-    char bmode = BMA_MODE_NORMAL;
-    SUCCEED(ioctl(fd, BMA_IOCTL_SET_MODE, &bmode) == 0);
+    unsigned char bmode = BMA020_MODE_NORMAL;
+    SUCCEED(ioctl(fd, BMA020_SET_MODE, &bmode) == 0);
 }
 
 void BMA020::stop()
 {        
-    char bmode = BMA_MODE_SLEEP;
-    SUCCEED(ioctl(fd, BMA_IOCTL_SET_MODE, &bmode) == 0);
+    unsigned char bmode = BMA020_MODE_SLEEP;
+    SUCCEED(ioctl(fd, BMA020_SET_MODE, &bmode) == 0);
 }
 
 }

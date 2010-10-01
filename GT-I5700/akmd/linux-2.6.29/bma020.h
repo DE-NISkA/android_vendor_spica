@@ -1,7 +1,7 @@
 #ifndef __BMA020_H__
 #define __BMA020_H__
 
-#include <linux/earlysuspend.h>
+#include "earlysuspend.h"
 
 /*********** for debug **********************************************************/
 #if 0 

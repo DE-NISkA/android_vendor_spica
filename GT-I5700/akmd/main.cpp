@@ -38,7 +38,7 @@ static void* read_loop(void *lock)
     return NULL;
 }
 
-void hero_mainloop(int magnetometer_gain, int temperature_zero)
+void mainloop(int magnetometer_gain, int temperature_zero)
 {
     AK8973B* magnetometer_reader = new AK8973B(magnetometer_gain);
     ChipReader* accelerometer_reader = new BMA020();
@@ -76,17 +76,11 @@ void hero_mainloop(int magnetometer_gain, int temperature_zero)
     delete accelerometer_reader;
 }
 
-void milestone_mainloop()
-{
-    /* TO BE DONE */
-}
-
 int main(int argc, char **argv)
 {
-    if (argc != 4) {
-        printf("Usage: akmd <device> <mg> <tz>\n");
+    if (argc != 3) {
+        printf("Usage: akmd <mg> <tz>\n");
         printf("\n");
-        printf("device = hero or milestone\n");
         printf("mg = magnetometer gain (0.4 dB)\n");
         printf("tz = temperature zero offset (C)\n");
         printf("\n");
@@ -94,19 +88,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int magnetometer_gain = atoi(argv[2]);
-    float temperature_zero = atof(argv[3]);
+    int  magnetometer_gain = atoi(argv[1]);
+    float temperature_zero = atof(argv[2]);
 
     LOGI("Akmd: opening devices");
 
-    if (strcmp(argv[1], "hero") == 0) {
-        hero_mainloop(magnetometer_gain, temperature_zero);
-    } else if (strcmp(argv[2], "milestone") == 0) {
-        milestone_mainloop();
-    } else {
-        printf("Device name is incorrect");
-        return 1;
-    }
+    mainloop(magnetometer_gain, temperature_zero);
 
     return 0;
 }

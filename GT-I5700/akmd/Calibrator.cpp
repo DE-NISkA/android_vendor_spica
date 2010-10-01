@@ -5,6 +5,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include <utils/Log.h>
+
 #include "Calibrator.hpp"
 #include "math/Matrix.hpp"
 #include "util.hpp"

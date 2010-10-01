@@ -1,7 +1,10 @@
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include <utils/Log.h>
 
 #include "device/AK8973B.hpp"
 #include "linux-2.6.29/ak8973b.h"
@@ -120,12 +123,10 @@ void AK8973B::calibrate_magnetometer_analog()
 void AK8973B::calibrate()
 {
     const int REFRESH = 1;
-
     magnetometer.update(next_update.tv_sec, m);
     if (magnetometer.fit_time <= next_update.tv_sec - REFRESH) {
         magnetometer.try_fit(next_update.tv_sec);
     }
-
     /* Correct for scale and offset. */
     m = m.add(magnetometer.center.multiply(-1));
     m = m.multiply(magnetometer.scale);
@@ -143,8 +144,9 @@ void AK8973B::measure() {
     /* Measuring puts readable state to 0. It is going to take
      * some time before the values are ready. Not using SET_MODE
      * because it contains mdelay(1) which makes measurements spin CPU! */
-    char akm_data[5] = { 2, AKECS_REG_MS1, AKECS_MODE_MEASURE };
-    SUCCEED(ioctl(fd, ECS_IOCTL_WRITE, &akm_data) == 0);
+    char akm_write[5] = { 2, AKECS_REG_MS1, AKECS_MODE_MEASURE };
+    char akm_read[32];
+    SUCCEED(ioctl(fd, ECS_IOCTL_WRITE, &akm_write) == 0);
 
     /* Sleep for 300 us, which is the measurement interval. */ 
     struct timespec interval;
@@ -152,11 +154,9 @@ void AK8973B::measure() {
     interval.tv_nsec = 300000;
     SUCCEED(nanosleep(&interval, NULL) == 0);
 
-    /* Significance and range of values can be extracted from
-     * online AK 8973 manual. The kernel driver just passes the data on. */
-    SUCCEED(ioctl(fd, ECS_IOCTL_GETDATA, &akm_data) == 0);
-    temperature = (signed char) akm_data[1];
-    mbuf[index] = Vector(127 - (unsigned char) akm_data[2], 127 - (unsigned char) akm_data[3], 127 - (unsigned char) akm_data[4]);
+    SUCCEED(ioctl(fd, ECS_IOCTL_GETDATA, &akm_read) == 0);
+    temperature = (signed char) akm_read[0];
+    mbuf[index] = Vector(127 - (unsigned char) akm_read[1], 127 - (unsigned char) akm_read[2], 127 - (unsigned char) akm_read[3]);
     index = (index + 1) & 1;
     
     m = mbuf[0].add(mbuf[1]).multiply(0.5f);

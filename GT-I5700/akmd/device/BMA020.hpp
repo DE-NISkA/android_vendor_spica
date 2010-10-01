@@ -6,7 +6,7 @@
 #include "Calibrator.hpp"
 #include "math/Vector.hpp"
 
-#define BMA020_NAME "/dev/bma020"
+#define BMA020_NAME "/dev/bma150"
 
 namespace akmd {
 
