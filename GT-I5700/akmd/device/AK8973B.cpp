@@ -154,9 +154,17 @@ void AK8973B::measure() {
     interval.tv_nsec = 300000;
     SUCCEED(nanosleep(&interval, NULL) == 0);
 
+//According to ak8973 datasheet:
+//C0H ST   Status register
+//C1H TMPS Temperature sensor data
+//C2H H1X  Mag. sensor X axis
+//C3H H1Y  Mag. sensor Y axis
+//C4H H1Z  Mag. sensor Z axis
+//and if we read more than C0-C4 it will cycle through C0-C4 again
+    
     SUCCEED(ioctl(fd, ECS_IOCTL_GETDATA, &akm_read) == 0);
-    temperature = (signed char) akm_read[0];
-    mbuf[index] = Vector(127 - (unsigned char) akm_read[1], 127 - (unsigned char) akm_read[2], 127 - (unsigned char) akm_read[3]);
+    temperature = (signed char) akm_read[1];
+    mbuf[index] = Vector(127 - (unsigned char) akm_read[2], 127 - (unsigned char) akm_read[3], 127 - (unsigned char) akm_read[4]);
     index = (index + 1) & 1;
     
     m = mbuf[0].add(mbuf[1]).multiply(0.5f);
