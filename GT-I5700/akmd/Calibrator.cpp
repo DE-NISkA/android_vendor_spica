@@ -23,7 +23,7 @@ void Calibrator::reset()
 {
     fit_time = 0;
     center = Vector(0, 0, 0);
-    scale = Vector(1, 1, 1);
+    scale  = Vector(1, 1, 1);
     old_nv = Vector(1, 0, 0);
     minimum_points_needed = PCR/4;
     idx = 0;
@@ -133,7 +133,7 @@ bool Calibrator::try_fit(int time)
         }
         delete[] x;
     }
-
+    
     return true;
 }
 

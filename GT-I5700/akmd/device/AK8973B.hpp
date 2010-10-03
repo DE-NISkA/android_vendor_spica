@@ -30,8 +30,8 @@ class AK8973B : public ChipReader, public TemperatureReader, public DataPublishe
     struct timeval next_update;
     int fd;
     short temperature;
-    int index;
-    Vector mbuf[2];
+
+    Vector mbuf;
 
     Vector m;
 
@@ -47,7 +47,7 @@ class AK8973B : public ChipReader, public TemperatureReader, public DataPublishe
     void calibrate();
 
     public:
-    AK8973B(int gain);
+    AK8973B(int dgain,int again);
     ~AK8973B();
 
     int get_delay();

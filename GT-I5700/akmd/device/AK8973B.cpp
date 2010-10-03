@@ -11,13 +11,14 @@
 
 namespace akmd {
 
-AK8973B::AK8973B(int gain)
-    : index(0), fixed_magnetometer_gain(15), magnetometer(600)
+AK8973B::AK8973B(int dgain, int again)
+: magnetometer(600)
 {
-    mbuf[0] = mbuf[1] = Vector();
+    mbuf = Vector();
 
-    magnetometer_gain = gain;
-
+    magnetometer_gain = dgain;
+    fixed_magnetometer_gain = again;
+     
     fd = open("/dev/akm8973_daemon", O_RDONLY);
     SUCCEED(fd != -1);
     SUCCEED(ioctl(fd, ECS_IOCTL_RESET, NULL) == 0);
@@ -45,7 +46,7 @@ void AK8973B::calibrate_analog_apply()
     };
 
     for (int i = 0; i < 6; i ++) {
-        char rwbuf[5] = { 2, 0xe1+i, params[i] };
+        char rwbuf[5] = { 2, AKECS_REG_HXDA+i, params[i] };
         SUCCEED(ioctl(fd, ECS_IOCTL_WRITE, &rwbuf) == 0);
     }
     
@@ -60,10 +61,10 @@ void AK8973B::calibrate_analog_apply()
 void AK8973B::calibrate_magnetometer_analog_helper(float val, int i)
 {
     const float ANALOG_MAX = 126.0f;
-    const float BOUND_MAX = 240.0f;
+    const float BOUND_MAX  = 240.0f;
     /* The rate of forgetting encountering the minimum or maximum bound.
-     * Keeping this fairly large to make it less likely that analog gain
-     * gets adjusted by mistake. */
+    * Keeping this fairly large to make it less likely that analog gain
+    * gets adjusted by mistake. */
     const float CALIBRATE_DECAY = 0.1f;
 
     /* Autoadjust analog parameters */
@@ -79,9 +80,9 @@ void AK8973B::calibrate_magnetometer_analog_helper(float val, int i)
     }
 
     /* If recorded digital bounds get close to completely used,
-     * we risk having to constantly adjust the analog gain. We
-     * should be able to detect this happening as user rotates the
-     * device. */
+    * we risk having to constantly adjust the analog gain. We
+    * should be able to detect this happening as user rotates the
+    * device. */
     if (rc_max[i] - rc_min[i] > BOUND_MAX && fixed_magnetometer_gain > 0) {
         fixed_magnetometer_gain -= 1;
         LOGI("Adjusting magnetometer gain to %d", fixed_magnetometer_gain);
@@ -130,6 +131,7 @@ void AK8973B::calibrate()
     /* Correct for scale and offset. */
     m = m.add(magnetometer.center.multiply(-1));
     m = m.multiply(magnetometer.scale);
+//    LOGD("mf x=%d y=%d z=%d",(int)m.x,(int)m.y,(int)m.z);
 }
 
 int AK8973B::get_delay() {
@@ -142,32 +144,37 @@ void AK8973B::measure() {
     SUCCEED(gettimeofday(&next_update, NULL) == 0);
 
     /* Measuring puts readable state to 0. It is going to take
-     * some time before the values are ready. Not using SET_MODE
-     * because it contains mdelay(1) which makes measurements spin CPU! */
-    char akm_write[5] = { 2, AKECS_REG_MS1, AKECS_MODE_MEASURE };
-    char akm_read[32];
-    SUCCEED(ioctl(fd, ECS_IOCTL_WRITE, &akm_write) == 0);
+    * some time before the values are ready. Not using SET_MODE
+    * because it contains mdelay(1) which makes measurements spin CPU! */
+    char akm_data[5] = { 2, AKECS_REG_MS1, AKECS_MODE_MEASURE, 0, 0};
+
+    SUCCEED(ioctl(fd, ECS_IOCTL_WRITE, &akm_data) == 0);
 
     /* Sleep for 300 us, which is the measurement interval. */ 
     struct timespec interval;
     interval.tv_sec = 0;
     interval.tv_nsec = 300000;
     SUCCEED(nanosleep(&interval, NULL) == 0);
+    
+    akm_data[0] = 4;
+    akm_data[1] = AKECS_REG_TMPS;
+    akm_data[2] = 0;
+    akm_data[3] = 0;
+    akm_data[4] = 0;  
+    SUCCEED(ioctl(fd, ECS_IOCTL_READ, &akm_data) == 0);
 
-//According to ak8973 datasheet:
-//C0H ST   Status register
-//C1H TMPS Temperature sensor data
-//C2H H1X  Mag. sensor X axis
-//C3H H1Y  Mag. sensor Y axis
-//C4H H1Z  Mag. sensor Z axis
-//and if we read more than C0-C4 it will cycle through C0-C4 again
+    temperature = 110 - (unsigned char)akm_data[1]*0.625;
     
-    SUCCEED(ioctl(fd, ECS_IOCTL_GETDATA, &akm_read) == 0);
-    temperature = (signed char) akm_read[1];
-    mbuf[index] = Vector(127 - (unsigned char) akm_read[2], 127 - (unsigned char) akm_read[3], 127 - (unsigned char) akm_read[4]);
-    index = (index + 1) & 1;
+    //because every 2nd measure iz 0 0 0
+    if(akm_data[2]!=0 && akm_data[3]!=0 && akm_data[4]!=0 )
+    m = mbuf = mbuf.multiply(0.5f).add( Vector(
+                                     127 - (unsigned char)akm_data[2],
+                                     127 - (unsigned char)akm_data[3],
+                                     127 - (unsigned char)akm_data[4]
+                                     ).multiply(0.5f));
+    else m = mbuf;
     
-    m = mbuf[0].add(mbuf[1]).multiply(0.5f);
+//    LOGD("mf x=%d y=%d z=%d",(int)mbuf.x,(int)mbuf.y,(int)mbuf.z);
     calibrate_magnetometer_analog();
     calibrate();
 }

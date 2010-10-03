@@ -38,12 +38,12 @@ static void* read_loop(void *lock)
     return NULL;
 }
 
-void mainloop(int magnetometer_gain, int temperature_zero)
+void mainloop(int d_gain, int a_gain)
 {
-    AK8973B* magnetometer_reader = new AK8973B(magnetometer_gain);
+    AK8973B* magnetometer_reader = new AK8973B(d_gain, a_gain);
     ChipReader* accelerometer_reader = new BMA020();
     ChipReader* orientation_reader = new OrientationAdapter(accelerometer_reader, magnetometer_reader);
-    ChipReader* temperature_reader = new TemperatureReaderAdapter(magnetometer_reader, temperature_zero);
+    ChipReader* temperature_reader = new TemperatureReaderAdapter(magnetometer_reader, 0);
     measurer = new Akmd(orientation_reader, magnetometer_reader, accelerometer_reader, temperature_reader, magnetometer_reader);
 
     while (true) {
@@ -79,21 +79,21 @@ void mainloop(int magnetometer_gain, int temperature_zero)
 int main(int argc, char **argv)
 {
     if (argc != 3) {
-        printf("Usage: akmd <mg> <tz>\n");
+        printf("Usage: akmd <dg> <ag>\n");
         printf("\n");
-        printf("mg = magnetometer gain (0.4 dB)\n");
-        printf("tz = temperature zero offset (C)\n");
+        printf("dg = magnetometer digital gain (dB)\n");
+        printf("ag = magnetometer analog  gain (dB)\n");
         printf("\n");
         printf("Both parameters are probably device model specific.\n");
         return 1;
     }
 
-    int  magnetometer_gain = atoi(argv[1]);
-    float temperature_zero = atof(argv[2]);
+    int  d_gain = atoi(argv[1]);
+    int  a_gain = atof(argv[2]);
 
     LOGI("Akmd: opening devices");
 
-    mainloop(magnetometer_gain, temperature_zero);
+    mainloop(a_gain, d_gain);
 
     return 0;
 }

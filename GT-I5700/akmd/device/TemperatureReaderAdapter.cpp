@@ -13,7 +13,7 @@ TemperatureReaderAdapter::~TemperatureReaderAdapter()
 }
 
 Vector TemperatureReaderAdapter::read() {
-    return Vector(-(backend->get_temperature() + zero), 0, 0);
+    return Vector((backend->get_temperature() + zero), 0, 0);
 }
 
 }

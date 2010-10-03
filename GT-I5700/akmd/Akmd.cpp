@@ -51,13 +51,16 @@ void Akmd::fill_result_vector(Vector o, Vector a, Vector m, short temperature, s
     out[4] = 3;
     out[5] = 3;
 
-    out[6] = roundf(a.x);
-    out[7] = roundf(a.z);
-    out[8] = -roundf(a.y);
-
-    out[9] = roundf(m.x);
+//dont know why
+    out[6] = -roundf(a.y);
+    out[7] =  roundf(a.z);
+    out[8] =  roundf(a.x);
+    
+    
+    
+    out[9] =  roundf(m.x);
     out[10] = roundf(m.y);
-    out[11] = -roundf(m.z);
+    out[11] = roundf(m.z);
 }
 
 /****************************************************************************/
